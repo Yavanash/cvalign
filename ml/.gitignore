@@ -1,2 +1,2 @@
 .env
-faiss_index/
+vector-store/faiss_index/
