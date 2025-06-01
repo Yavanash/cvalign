@@ -1,15 +1,28 @@
-from loader import  extract_text, extract_jd_text
-# from data.preprocess import clean_text
+from loader import  extract_text
+from data.preprocess import clean_text
+from nltk.stem import WordNetLemmatizer
+from nltk.tokenize import sent_tokenize, word_tokenize
+from nltk.corpus import stopwords
 import requests
+import re
 
 #input json:{"target_job_desc": "", "cv":""}
-def llm_response(input_json):
-    response = requests.post("http://localhost:8000/score/invoke", json={"input": input_json})
+def gemma_response(input_json):
+    response = requests.post("http://localhost:8000/score/gemma/invoke", json={"input": input_json})
     return response.json()["output"]
 
+def mistral_response(input_json):
+    response = requests.post("http://localhost:8000/score/mistral/invoke", json={"input": input_json})
+    return response.json()["output"]
+
+docs = extract_text("data/yavancv.pdf") #this is a list of documents
+cv = clean_text(docs[0].page_content)
+
+print(cv, "\n\n\n")
+
 input_json = {
-    "target_job_desc": "we are looking for hire experts flutter developer. so you are eligible this post then apply your resume. job types: full-time, part-time salary: 20,000.00 - 40,000.00 per month benefits: flexible schedule food allowance schedule: day shift supplemental pay: joining bonus overtime pay experience: total work: 1 year (preferred) housing rent subsidy: yes industry: software development work remotely: temporarily due to covid-19",
-    "cv": " : as a recent graduate in computer science with 6-months of experience in flutter, i am excited to apply for the position of flutter developer at your company. though i have not worked with android studio, i am willing to learn and adapt as per the requirement. i have experience in handling user-friendly ui based on requirements in a flutter and knowledge of firebase. i am comfortable working with cross-platform frameworks. while i have not worked with location services and video recording, i am eager to learn and implement them. i am a strong team player with a commitment to perfection and am ready to face new challenges."    
+    "target_job_desc": 'data scientist (contractor) bangalore, in responsibilities we are looking for a capable data scientist to join the analytics team, reporting locally in india bangalore. this persons responsibilities include research, design and development of machine learning and deep learning algorithms to tackle a variety of fraud oriented challenges. the data scientist will work closely with software engineers and program managers to deliver end-to-end products, including: data collection in big scale and analysis, exploring different algorithmic approaches, model development, assessment and validation all the way through production. qualifications at least 3 years of hands-on development of complex machine learning models using modern frameworks and tools, ideally python based. solid understanding of statistics and applied mathematics creative thinker with a proven ability to tackle open problems and apply non-trivial solutions. experience in software development using python, java or a similar language. any graduate or m.sc. in computer science, mathematics or equivalent, preferably in machine learning ability to write clean and concise code quick learner, independent, methodical, and detail oriented. team player, positive attitude, collaborative, good communication skills. dedicated, makes things happen. flexible, capable of making decisions in an ambiguous and changing environment. advantages: prior experience as a software developer or data engineer advantage experience with big data advantage experience with spark big advantage experience with deep learning frameworks (pytorch, tensorflow, keras) advantage. experience in the telecommunication domain and/or fraud prevention - advantage',
+    "cv": cv
 }
 
-print(llm_response(input_json))
+print(mistral_response(input_json))

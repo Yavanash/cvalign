@@ -29,14 +29,14 @@ def clean_text(txt):
 
     return txt
 
-df = pd.read_csv("job_title_desc.csv")
-df["pjdesc"] = df["Job Description"].apply(clean_text)
-df = df.drop(columns=["Job Description", "Unnamed: 0"])
+# df = pd.read_csv("job_title_des.csv")
+# df["pjdesc"] = df["Job Description"].apply(clean_text)
+# df = df.drop(columns=["Job Description", "Unnamed: 0"])
 
-df1 = pd.read_csv("synthetic-resumes.csv")
-df1["cv"] = df1["Resume"].apply(clean_text)
-# print(df1.head(5))
-df1.to_csv("test.csv", index=False)
+# df1 = pd.read_csv("synthetic-resumes.csv")
+# df1["cv"] = df1["Resume"].apply(clean_text)
+# # print(df1.head(5))
+# df1.to_csv("test.csv", index=False)
 
 # print(df.head(3))
 # df.to_csv("data.csv", index=False)
