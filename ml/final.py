@@ -1,4 +1,4 @@
-from loader import  extract_text
+from document_loader.loader import  extract_text
 from data.preprocess import clean_text
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize, word_tokenize
