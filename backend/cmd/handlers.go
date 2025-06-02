@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"log"
@@ -8,9 +9,20 @@ import (
 	"os"
 )
 
+type ScoreRequest struct {
+	Filename string `json:"filename"`
+}
+
 type FileMetaData struct {
-	Name string `json:"name"`
-	Size int64  `json:"size"`
+	Name   string     `json:"name"`
+	Type   string     `json:"type"`
+	Result MLResponse `json:"result"`
+}
+
+type MLResponse struct {
+	Status  string  `json:"status"`
+	Score   float64 `json:"score"`
+	Remarks string  `json:"remarks"`
 }
 
 func (app *Application) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,12 +64,13 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	fileMeta := FileMetaData{
 		Name: handler.Filename,
-		Size: handler.Size,
+		Type: mimeType,
 	}
 
 	// Create a file on the server
 	dst, err := os.Create("./uploads/" + handler.Filename)
 	if err != nil {
+		log.Println("error")
 		http.Error(w, "Unable to create the file", http.StatusInternalServerError)
 		return
 	}
@@ -69,8 +82,36 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to save the file", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "apllication/json")
+
+	ch := make(chan MLResponse)
+	go func(ch chan MLResponse, filepath string) {
+		const MLURL string = "http://localhost:8000/score"
+		reqBody, _ := json.Marshal(ScoreRequest{Filename: filepath})
+		resp, err := http.Post(MLURL, "application/json", bytes.NewBuffer([]byte(reqBody)))
+		if err != nil {
+			log.Println("Request error:", err)
+			ch <- MLResponse{Status: "error", Score: 0.0, Remarks: err.Error()}
+			return
+		}
+		defer resp.Body.Close()
+		var apiResp MLResponse
+
+		decoder := json.NewDecoder(resp.Body)
+		decoder.DisallowUnknownFields()
+		err = decoder.Decode(&apiResp)
+		if err != nil {
+			log.Println("Decode error:", err)
+			ch <- MLResponse{Status: "error", Score: 0.0, Remarks: err.Error()}
+			return
+		}
+		ch <- apiResp
+	}(ch, handler.Filename)
+
+	mlresp := <-ch
+	fileMeta.Result = mlresp
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	log.Printf("File uploaded successfully!\n")
+
 	json.NewEncoder(w).Encode(fileMeta)
 }

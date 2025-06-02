@@ -1,0 +1,21 @@
+How to run the project
+
+// PORT = 8080
+// MAKE SURE TO CREATE A backend/uploads folder before running on your local system
+// ELSE DOCKER WILL CREATE THAT IN ITS CONTAINER
+for the GO server...
+RUN: cd backend
+RUN: docker build -t backend-app .
+RUN: docker run -p 8080:8080 backend-app 
+
+// PORT = 8000
+for python server..
+RUN: python mock.py
+
+
+
+for the frontend server...
+RUN: npx serve -p 5500
+
+// These steps are taken to prevent the default function of the live server VSCode
+// extension to reload the page on every POST request

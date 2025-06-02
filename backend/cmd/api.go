@@ -29,10 +29,11 @@ func (app *Application) mount() http.Handler {
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
 	// processing should be stopped.
-	router.Use(middleware.Timeout(60 * time.Second))
+	router.Use(middleware.Timeout(5 * time.Minute))
 
 	// Routes for the API
 	router.Route("/v1", func(r chi.Router) {
+		r.Use(app.WithCORS)
 		r.Get("/health", app.HealthCheckHandler)
 		r.Post("/upload", app.UploadHandler)
 	})

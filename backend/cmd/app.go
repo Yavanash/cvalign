@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	os.MkdirAll("./uploads", os.ModePerm)
+	fmt.Println("Directory created")
 	if err != nil {
 		log.Fatal("Error loading .env", err.Error())
 	}
