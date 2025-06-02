@@ -1,2 +1,4 @@
 .env
 vector-store/faiss_index/
+data/yavancv.pdf
+data/testing.ipynb
