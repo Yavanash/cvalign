@@ -11,6 +11,7 @@ import (
 
 type ScoreRequest struct {
 	Filename string `json:"filename"`
+	JobDesc  string `json:"job_desc"`
 }
 
 type FileMetaData struct {
@@ -20,9 +21,12 @@ type FileMetaData struct {
 }
 
 type MLResponse struct {
-	Status  string  `json:"status"`
-	Score   float64 `json:"score"`
-	Remarks string  `json:"remarks"`
+	Status     string   `json:"status"`
+	Score      float64  `json:"relevance_score"`
+	Assessment string   `json:"assessment"`
+	Strengths  []string `json:"strengths"`
+	Drawbacks  []string `json:"drawbacks"`
+	Remarks    []string `json:"recommendations"`
 }
 
 func (app *Application) HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +40,7 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve the file from the posted form-data
 	file, handler, err := r.FormFile("pdf")
+	jd := r.FormValue("job_desc")
 	if err != nil {
 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
 		return
@@ -85,12 +90,15 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	ch := make(chan MLResponse)
 	go func(ch chan MLResponse, filepath string) {
-		const MLURL string = "http://localhost:8000/score"
-		reqBody, _ := json.Marshal(ScoreRequest{Filename: filepath})
+		const MLURL string = "http://ml:8000/score"
+		reqBody, _ := json.Marshal(ScoreRequest{
+			Filename: filepath,
+			JobDesc:  jd,
+		})
 		resp, err := http.Post(MLURL, "application/json", bytes.NewBuffer([]byte(reqBody)))
 		if err != nil {
 			log.Println("Request error:", err)
-			ch <- MLResponse{Status: "error", Score: 0.0, Remarks: err.Error()}
+			ch <- MLResponse{Status: "error", Score: 0.0}
 			return
 		}
 		defer resp.Body.Close()
@@ -101,7 +109,7 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		err = decoder.Decode(&apiResp)
 		if err != nil {
 			log.Println("Decode error:", err)
-			ch <- MLResponse{Status: "error", Score: 0.0, Remarks: err.Error()}
+			ch <- MLResponse{Status: "error", Score: 0.0}
 			return
 		}
 		ch <- apiResp

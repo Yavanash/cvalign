@@ -16,6 +16,9 @@ FROM golang:1.24
 
 WORKDIR /app
 
+# Create the uploads folder
+RUN mkdir -p ./uploads
+
 COPY --from=builder /bin/main .
 COPY .env .env
 
