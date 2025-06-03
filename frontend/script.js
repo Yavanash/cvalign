@@ -3,6 +3,7 @@
   const uploadBtn = document.getElementById('uploadBtn');
   const clearBtn = document.getElementById('clearBtn');
   const fileInput = document.getElementById('pdfFile');
+  const jobInput = document.getElementById('job_desc');
   const unselectBtn = document.getElementById('unselectBtn');
 
   // Clear function
@@ -35,6 +36,11 @@
           responseBox.className = 'response-box error';
           return;
       }
+      if (!jobInput.value) {
+          responseBox.textContent = 'Job description cannot be blank';
+          responseBox.className = 'response-box error';
+          return;
+      }
       
       const selectedFile = fileInput.files[0];
       // Disable button
@@ -48,6 +54,7 @@
       // Create FormData
       const formData = new FormData();
       formData.append('pdf', selectedFile);
+      formData.append('job_desc', jobInput.value);
       
       try {
           const res = await fetch('http://localhost:8080/v1/upload', {

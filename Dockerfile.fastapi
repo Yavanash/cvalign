@@ -1,0 +1,11 @@
+# Dockerfile.fastapi
+FROM python:3.11
+
+WORKDIR /app
+
+COPY mock.py .
+RUN pip install fastapi uvicorn pydantic requests
+
+EXPOSE 8000
+
+CMD ["uvicorn", "mock:app", "--host", "0.0.0.0", "--port", "8000"]
