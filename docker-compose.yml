@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   backend:
     build:
@@ -8,6 +6,8 @@ services:
       - "8080:8080"
     depends_on:
       - ml
+    volumes:
+      - uploads-data:/app/uploads
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -17,3 +17,8 @@ services:
       dockerfile: Dockerfile.fastapi
     ports:
       - "8000:8000"
+    volumes:
+      - uploads-data:/app/uploads
+
+volumes:
+  uploads-data:
