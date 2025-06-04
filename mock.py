@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from ml.document_loader.loader import extract_text
+from ml.data.preprocess import clean_text
 import uvicorn
 from typing import List
 from pydantic import BaseModel, Field
@@ -32,7 +34,8 @@ def score(request_data: ScoreRequest):
     # You can do ML model scoring or other logic here
     print("Received:", request_data)
     #load data
-    docs = extract_text(request_data) #this is a list of documents
+    cv_file_path = "backend/uploads" + request_data.filename
+    docs = extract_text(cv_file_path) #this is a list of documents
     raw = ""
     for doc in docs:
         raw = raw + doc.page_content
