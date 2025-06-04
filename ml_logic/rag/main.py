@@ -5,10 +5,6 @@ from langchain_core.prompts import PromptTemplate
 from langchain.schema.runnable import RunnableParallel, RunnableLambda, RunnablePassthrough
 from langchain_core.output_parsers import PydanticOutputParser
 
-from fastapi import FastAPI
-import uvicorn
-from langserve import add_routes
-
 from typing import List, Dict, Any
 from pydantic import Field, BaseModel
 
@@ -33,7 +29,7 @@ class CVEvalResult(BaseModel):
 
 #vector database = FAISS
 embedder = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2", model_kwargs={"device":"cpu"})
-vectore_store = FAISS.load_local("../vector-store/faiss_index", embedder, allow_dangerous_deserialization=True)
+vectore_store = FAISS.load_local("/app/vector-store/faiss_index", embedder, allow_dangerous_deserialization=True)
 
 # query = "what are the required skills for a data scientist
 # response = vectore_store.similarity_search(query=query, k=3)
@@ -41,9 +37,9 @@ vectore_store = FAISS.load_local("../vector-store/faiss_index", embedder, allow_
 # print(response[0])dex", embeddings=embedder, allow_dangerous_deserialization=True)
 output_parser = PydanticOutputParser(pydantic_object=CVEvalResult)
 
-# model = gemma:2b
-gemma = Ollama(model="gemma:2b")
-mistral = Ollama(model="mistral")
+# model = mistral
+ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+mistral = Ollama(base_url=ollama_url, model="mistral")
 
 format_instructions = """{
   "relevance_score": integer (0-100),
@@ -114,17 +110,17 @@ def safe_output_parse(x):
    return x
 
 #evaluation chain
-eval_chain_gemma = (
-   RunnableParallel({
-      "similar_jobs": RunnableLambda(get_similar_jobs),
-      "target_job_desc": RunnablePassthrough() | (lambda x: x["target_job_desc"]),
-      "cv": RunnablePassthrough() | (lambda x: x["cv"])
-   }) 
-   | prompt
-   | gemma
-   | RunnableLambda(safe_output_parse)
-   | output_parser
-)
+# eval_chain_gemma = (
+#    RunnableParallel({
+#       "similar_jobs": RunnableLambda(get_similar_jobs),
+#       "target_job_desc": RunnablePassthrough() | (lambda x: x["target_job_desc"]),
+#       "cv": RunnablePassthrough() | (lambda x: x["cv"])
+#    }) 
+#    | prompt
+#    | gemma
+#    | RunnableLambda(safe_output_parse)
+#    | output_parser
+# )
 
 eval_chain_mistral = (
    RunnableParallel({
@@ -156,24 +152,3 @@ def testing():
 
   # print(output_parser.get_format_instructions())
   pass
-
-app = FastAPI(
-    title="CV-ALIGN",
-    version="1.0",
-    description="CV scorer application using RAG"
-)
-
-add_routes(
-  app, 
-  eval_chain_gemma.with_types(input_type=CVEvalInput, output_type=CVEvalResult),
-  path='/score/gemma'
-)
-
-add_routes(
-   app,
-   eval_chain_mistral.with_types(input_type=CVEvalInput, output_type=CVEvalResult),
-   path="/score/mistral"
-)
-
-if __name__=="__main__":
-   uvicorn.run(app, host="localhost", port=9000)

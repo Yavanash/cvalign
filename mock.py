@@ -1,11 +1,10 @@
 from fastapi import FastAPI
-from ml.document_loader.loader import extract_text
-from ml.data.preprocess import clean_text
+from ml_logic.document_loader.loader import extract_text
+from ml_logic.data.preprocess import clean_text
 import uvicorn
 from typing import List
 from pydantic import BaseModel, Field
-import time
-import requests
+from ml_logic.rag.main import eval_chain_mistral
 
 class ScoreRequest(BaseModel):
     filename: str
@@ -18,23 +17,14 @@ class ScoreResponse(BaseModel):
     drawbacks: List[str] = Field(default=[""], description="Areas where candidate can improve")
     recommendations: List[str] = Field(default=[""], description="Actionable recommendations")
 
-#input json:{"target_job_desc": "", "cv":""}
-def gemma_response(input_json):
-    response = requests.post("http://localhost:9000/score/gemma/invoke", json={"input": input_json})
-    return response.json()["output"]
-
-def mistral_response(input_json):
-    response = requests.post("http://localhost:9000/score/mistral/invoke", json={"input": input_json})
-    return response.json()["output"]
-
 app = FastAPI()
 
 @app.post("/score", response_model=ScoreResponse)
-def score(request_data: ScoreRequest):
+async def score(request_data: ScoreRequest):
     # You can do ML model scoring or other logic here
     print("Received:", request_data)
     #load data
-    cv_file_path = "backend/uploads" + request_data.filename
+    cv_file_path = "/app/uploads/" + request_data.filename
     docs = extract_text(cv_file_path) #this is a list of documents
     raw = ""
     for doc in docs:
@@ -45,8 +35,8 @@ def score(request_data: ScoreRequest):
     jd=request_data.job_desc
     input_json = {"target_job_desc": jd, "cv":cv}
 
-    output = mistral_response(input_json)
-    return output
+    result = await eval_chain_mistral.ainvoke(input_json)
+    return result
 
 if __name__=="__main__":
    uvicorn.run(app, host="localhost", port=8000)
