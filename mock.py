@@ -32,14 +32,14 @@ def score(request_data: ScoreRequest):
     # You can do ML model scoring or other logic here
     print("Received:", request_data)
     #load data
-    # docs = extract_text(request_data) #this is a list of documents
-    # raw = ""
-    # for doc in docs:
-    #     raw = raw + doc.page_content
-    # cv = clean_text(raw)
+    docs = extract_text(request_data) #this is a list of documents
+    raw = ""
+    for doc in docs:
+        raw = raw + doc.page_content
+    cv = clean_text(raw)
 
     #let jd is the job description entered by user
-    jd=request_data.job_description
+    jd=request_data.job_desc
     input_json = {"target_job_desc": jd, "cv":cv}
 
     output = mistral_response(input_json)
