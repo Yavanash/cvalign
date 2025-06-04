@@ -6,8 +6,8 @@ import time
 import requests
 
 class ScoreRequest(BaseModel):
-    cv_file_path: str
-    job_description: str
+    filename: str
+    job_desc: str
 
 class ScoreResponse(BaseModel):
     relevance_score: float = Field(default=0, description="Overall relevance score from 0-100")
