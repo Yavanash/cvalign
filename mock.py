@@ -8,7 +8,8 @@ import time
 import requests
 
 class ScoreRequest(BaseModel):
-    filename: str
+    cv_file_path: str
+    job_description: str
 
 class ScoreResponse(BaseModel):
     relevance_score: int = Field(default=0, description="Overall relevance score from 0-100")
@@ -32,8 +33,6 @@ app = FastAPI()
 def score(request_data: ScoreRequest):
     # You can do ML model scoring or other logic here
     print("Received:", request_data)
-    time.sleep(10)
-    
     #load data
     docs = extract_text(request_data) #this is a list of documents
     raw = ""
@@ -42,9 +41,11 @@ def score(request_data: ScoreRequest):
     cv = clean_text(raw)
 
     #let jd is the job description entered by user
-    jd=""
+    jd=request_data.job_description
     input_json = {"target_job_desc": jd, "cv":cv}
-    #if input is small call gemma function, else call mistral....(if error due to gemma call mistral)
+
+    output = mistral_response(input_json)
+    return output
 
 if __name__=="__main__":
-   uvicorn.run(app, host="localhost", port=8000)
+   uvicorn.run(app, host="localhost", port=9000)
