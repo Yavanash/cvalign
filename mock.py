@@ -20,11 +20,11 @@ class ScoreResponse(BaseModel):
 
 #input json:{"target_job_desc": "", "cv":""}
 def gemma_response(input_json):
-    response = requests.post("http://localhost:8000/score/gemma/invoke", json={"input": input_json})
+    response = requests.post("http://localhost:9000/score/gemma/invoke", json={"input": input_json})
     return response.json()["output"]
 
 def mistral_response(input_json):
-    response = requests.post("http://localhost:8000/score/mistral/invoke", json={"input": input_json})
+    response = requests.post("http://localhost:9000/score/mistral/invoke", json={"input": input_json})
     return response.json()["output"]
 
 app = FastAPI()
@@ -49,4 +49,4 @@ def score(request_data: ScoreRequest):
     return output
 
 if __name__=="__main__":
-   uvicorn.run(app, host="localhost", port=9000)
+   uvicorn.run(app, host="localhost", port=8000)
