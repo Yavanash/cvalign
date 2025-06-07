@@ -37,10 +37,15 @@ func (app *Application) HealthCheckHandler(w http.ResponseWriter, r *http.Reques
 func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	// File size max 10 MB
 	r.ParseMultipartForm(10 << 20)
+	ctx := r.Context()
 
 	// Retrieve the file from the posted form-data
 	file, handler, err := r.FormFile("pdf")
 	jd := r.FormValue("job_desc")
+	candidate := Candidate{
+		Name: r.FormValue("candidate_name"),
+	}
+
 	if err != nil {
 		http.Error(w, "Error retrieving the file", http.StatusBadRequest)
 		return
@@ -117,9 +122,21 @@ func (app *Application) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	mlresp := <-ch
 	fileMeta.Result = mlresp
+	candidate.Score = int64(fileMeta.Result.Score)
+	app.store.InsertCandidate(ctx, &candidate)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	log.Printf("File uploaded successfully!\n")
 
 	json.NewEncoder(w).Encode(fileMeta)
+}
+
+func (app *Application) GetLeaderboardHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	leaderboard, err := app.store.GetLeaderboard(ctx)
+	if err != nil {
+		jsonResponse(w, http.StatusInternalServerError, "error getting leaderboard")
+		return
+	}
+	jsonResponse(w, http.StatusOK, leaderboard)
 }

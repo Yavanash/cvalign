@@ -8,22 +8,40 @@
 
 </head>
 <body>
-  <div class="upload-container">
-    <h2>Upload a PDF File</h2>
+<div class="main-container">
+    <!-- Upload Section -->
+    <div class="upload-section">
+        <h2>Upload a PDF File</h2>
+        <div>
+            <div class="form-group">
+                <input type="text" id="job_desc" placeholder="Job Description" />
+                <input type="text" id="candidate" placeholder="Candidate name" />
+            </div>
+            <div class="form-group">
+                <input type="file" id="pdfFile" accept="application/pdf" />
+            </div>
+            <div class="button-group">
+                <button id="uploadBtn">Upload PDF</button>
+                <button id="clearBtn">Clear Response</button>
+                <button id="unselectBtn">Unselect File</button>
+            </div>
+        </div>
+        <div id="response" class="response-box">
+            Ready to upload... Select a PDF file and click Upload.
+        </div>
+    </div>
 
-    <div>
-        <input type="text" id="job_desc" placeholder="Job Description" />
-        <input type="file" id="pdfFile" accept="application/pdf" />
-        <br>
-        <button id="uploadBtn">Upload PDF</button>
-        <button id="clearBtn">Clear Response</button>
-        <button id="unselectBtn">Unselect File</button>
-        <br>
+    <!-- Leaderboard Section -->
+    <div class="leaderboard-section">
+        <div class="leaderboard-header">
+            <h3 class="leaderboard-title">🏆 Leaderboard</h3>
+            <button class="refresh-btn" id="refreshLeaderboard">↻ Refresh</button>
+        </div>
+        <ul class="leaderboard-list" id="leaderboardList">
+            <!-- Leaderboard items will be populated here -->
+        </ul>
     </div>
-    <div id="response" class="response-box">
-    Ready to upload... Select a PDF file and click Upload.
-    </div>
-  </div>
+</div>
  <script src="./script.js", type="text/javascript"></script>
 </body>
 </html>

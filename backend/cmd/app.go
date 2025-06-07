@@ -19,9 +19,27 @@ func main() {
 
 	config := Config{
 		addr: env.GetString("PORT", ":8080"),
+		db: DBConfig{
+			addr:         env.GetString("DB_BIND", "postgres://postgres:seccretpassword@localhost:5432/mydb?sslmode=disable"),
+			MaxConns:     10,
+			MaxIdleConns: 5,
+			MaxIdleTime:  5,
+		},
+	}
+	db, err := mount(
+		config.db.addr,
+		config.db.MaxConns,
+		config.db.MaxIdleConns,
+		config.db.MaxIdleTime,
+	)
+	if err != nil {
+		log.Fatal(err)
 	}
 	app := &Application{
 		config: config,
+		store: store{
+			db: db,
+		},
 	}
 
 	AppMux := app.mount()

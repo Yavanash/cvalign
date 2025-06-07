@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,10 +12,19 @@ import (
 
 type Application struct {
 	config Config
+	store  store
 }
 
 type Config struct {
 	addr string
+	db   DBConfig
+}
+
+type DBConfig struct {
+	addr         string
+	MaxConns     int
+	MaxIdleConns int
+	MaxIdleTime  int
 }
 
 func (app *Application) mount() http.Handler {
@@ -36,6 +46,7 @@ func (app *Application) mount() http.Handler {
 		r.Use(app.WithCORS)
 		r.Get("/health", app.HealthCheckHandler)
 		r.Post("/upload", app.UploadHandler)
+		r.Get("/leaderboard", app.GetLeaderboardHandler)
 	})
 
 	return router
@@ -52,4 +63,19 @@ func (app *Application) run(mux http.Handler) error {
 
 	fmt.Printf("Server listening at http://localhost%s\n", app.config.addr)
 	return server.ListenAndServe()
+}
+
+func jsonResponse(w http.ResponseWriter, status int, data any) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	type Resp struct {
+		Data any `json:"data"`
+	}
+	resp := Resp{
+		Data: data,
+	}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		return err
+	}
+	return nil
 }
