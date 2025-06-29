@@ -16,7 +16,7 @@ load_dotenv()
 os.environ["LANGCHAIN_TRACING"] = "true"
 os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-index_dir = "/home/spacemonk/projects/cvalign1/ml_logic/vector-store/faiss_index"
+index_dir = "/home/spacemonk/projects/cvalign/ml_logic/vector-store/faiss_index"
 
 class CVEvalInput(BaseModel):
     target_job_desc: str = Field(description="The ideal job description for the role")

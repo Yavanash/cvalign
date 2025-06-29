@@ -3,13 +3,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
 import tempfile
 import os
+from glob import glob
 import uvicorn
+import warnings
 from datetime import datetime
 from pydantic import BaseModel, Field
 from ml_logic.document_loader.loader import extract_text
 from ml_logic.data.preprocess import clean_text
 from ml_logic.rag.main import eval_chain_mistral
 
+warnings.filterwarnings("ignore", category=UserWarning)
 app = FastAPI(title="Resume Screener API", version="1.0.0")
 
 app.add_middleware(
@@ -43,48 +46,47 @@ class ScoreResponse(BaseModel):
     drawbacks: List[str] = Field(default=[], description="Areas where candidate can improve")
     recommendations: List[str] = Field(default=[], description="Actionable recommendations")
 
-async def process_resume_with_llm(pdf_path: str, job_description: str):
-    docs = extract_text(pdf_path)
-    raw_text = "".join(doc.page_content for doc in docs)
-    cv = clean_text(raw_text)
-    
+async def process_resume_with_llm(filepath: str, job_description: str):
+    docs = extract_text(filepath)
+    txt = "".join(doc.page_content for doc in docs)
+    cv = clean_text(txt)
     input_data = {"target_job_desc": job_description, "cv": cv}
     result = await eval_chain_mistral.ainvoke(input_data)
     return result
 
-@app.post("/score", response_model=ScoreResponse)
+@app.post("/score", response_model=List[ScoreResponse])
 async def score_resume(
-    pdf: UploadFile = File(...),
+    pdfs: List[UploadFile] = File(...),
     job_desc: str = Form(...),
     candidate_name: Optional[str] = Form(None)
 ):
+    results = []
+    for pdf in pdfs:
+        try:
+            pdf_content = await pdf.read()
     
-    try:
-        pdf_content = await pdf.read()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+                temp_file.write(pdf_content)
+                temp_file_path = temp_file.name
+            result = await process_resume_with_llm(temp_file_path, job_desc)
+            results.append(result)
+            os.unlink(temp_file_path)
+            
+            leaderboard_entry = LeaderboardEntry(
+                username=candidate_name or "Anonymous",
+                score=result.relevance_score,
+                timestamp=datetime.now().isoformat(),
+            )
+            leaderboard_data.append(leaderboard_entry.dict())
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
-            temp_file.write(pdf_content)
-            temp_file_path = temp_file.name
-        
-        result = await process_resume_with_llm(temp_file_path, job_desc)
-        os.unlink(temp_file_path)
-        
-        leaderboard_entry = LeaderboardEntry(
-            username=candidate_name or "Anonymous",
-            score=result.relevance_score,
-            timestamp=datetime.now().isoformat(),
-        )
-        leaderboard_data.append(leaderboard_entry.dict())
-        
-        return result
-        
-    except Exception as e:
-        if 'temp_file_path' in locals():
-            try:
-                os.unlink(temp_file_path)
-            except:
-                pass
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+        except Exception as e:
+            if 'temp_file_path' in locals():
+                try:
+                    os.unlink(temp_file_path)
+                except:
+                    pass
+            raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+    return results
 
 @app.get("/v1/leaderboard", response_model=LeaderboardResponse)
 async def get_leaderboard():

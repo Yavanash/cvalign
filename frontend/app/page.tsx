@@ -38,7 +38,7 @@ interface ScoreResponse {
 }
 
 export default function ResumeScreener() {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [jobDescription, setJobDescription] = useState("")
   const [candidateName, setCandidateName] = useState("")
   const [scoreResponse, setScoreResponse] = useState<ScoreResponse | null>(null)
@@ -55,17 +55,18 @@ export default function ResumeScreener() {
   }, [])
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
+    const files = event.target.files
+    if (files) {
+      const fileArray = Array.from(files)
+      setSelectedFiles(fileArray)
       setErrorMessage("")
       setScoreResponse(null)
     }
   }
 
   const handleAnalyze = async () => {
-    if (!selectedFile) {
-      setErrorMessage("Please select a PDF file first.")
+    if (selectedFiles.length === 0) {
+      setErrorMessage("Please select at least one PDF file.")
       return
     }
 
@@ -78,25 +79,33 @@ export default function ResumeScreener() {
     setErrorMessage("")
     setScoreResponse(null)
 
-    const formData = new FormData()
-    formData.append("pdf", selectedFile)
-    formData.append("job_desc", jobDescription)
-    formData.append("candidate_name", candidateName)
-
     try {
-      const res = await fetch("http://localhost:8080/score", {
-        method: "POST",
-        body: formData,
-      })
+      const results = []
 
-      if (!res.ok) {
-        const errText = await res.text()
-        setErrorMessage(`Server error: ${res.status}\n${errText}`)
-        return
+      // Process each file
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i]
+        const formData = new FormData()
+        formData.append("pdf", file)
+        formData.append("job_desc", jobDescription)
+        formData.append("candidate_name", candidateName || `Candidate ${i + 1}`)
+
+        const res = await fetch("http://localhost:8080/score", {
+          method: "POST",
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const errText = await res.text()
+          throw new Error(`Error processing ${file.name}: ${res.status} ${errText}`)
+        }
+
+        const data: ScoreResponse = await res.json()
+        results.push({ ...data, fileName: file.name })
       }
 
-      const data: ScoreResponse = await res.json()
-      setScoreResponse(data)
+      // For now, show the first result (you might want to modify this)
+      setScoreResponse(results[0])
 
       // Refresh leaderboard after successful analysis
       await fetchLeaderboardFromServer()
@@ -114,7 +123,7 @@ export default function ResumeScreener() {
   }
 
   const handleUnselectFile = () => {
-    setSelectedFile(null)
+    setSelectedFiles([])
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -201,7 +210,7 @@ export default function ResumeScreener() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">CVAlign</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">AI Resume Screener</h1>
           <p className="text-lg text-gray-600">Advanced resume evaluation with detailed insights and recommendations</p>
         </div>
 
@@ -228,13 +237,21 @@ export default function ResumeScreener() {
                     ref={fileInputRef}
                     type="file"
                     accept=".pdf"
+                    multiple
                     onChange={handleFileSelect}
                     className="cursor-pointer"
                   />
-                  {selectedFile && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-green-600">
-                      <FileText className="h-4 w-4" />
-                      {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)
+                  {selectedFiles.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      {selectedFiles.map((file, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm text-green-600">
+                          <FileText className="h-4 w-4" />
+                          {file.name} ({Math.round(file.size / 1024)} KB)
+                        </div>
+                      ))}
+                      <p className="text-sm text-gray-600 mt-2">
+                        {selectedFiles.length} file{selectedFiles.length > 1 ? "s" : ""} selected
+                      </p>
                     </div>
                   )}
                 </div>
@@ -267,7 +284,9 @@ export default function ResumeScreener() {
 
                 <div className="flex gap-2 flex-wrap">
                   <Button onClick={handleAnalyze} disabled={isAnalyzing} className="flex-1 sm:flex-none">
-                    {isAnalyzing ? "Analyzing..." : "Analyze Resume"}
+                    {isAnalyzing
+                      ? `Analyzing ${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""}...`
+                      : "Analyze Resume(s)"}
                   </Button>
                   <Button variant="outline" onClick={handleClear}>
                     Clear Results
