@@ -18,13 +18,12 @@ CVAlign is an AI-driven resume evaluation tool that assesses candidate CVs again
 
 ```
 cv-align/
-├── backend/                # Flask backend for file processing and model inference
-│   ├── app.py              
-│   ├── ml_logic/           # Custom ML logic for parsing, RAG, scoring
-│   └── requirements.txt
 ├── frontend/               # React-based frontend using Vite + Tailwind + shadcn
 │   ├── src/
-│   └── package.json
+│   └── package.json               # Flask backend for file processing and model inference
+├── app.py              
+├── ml_logic/           # Custom ML logic for parsing, RAG, scoring
+└── requirements.txt
 ├── README.md               # Project README (you're here)
 ```
 
@@ -42,26 +41,20 @@ cv-align/
 
 ### 🔧 Backend
 
-1. Navigate to the backend folder:
-
-   ```bash
-   cd backend
-   ```
-
-2. (Optional) Create a virtual environment:
+1. Create a virtual environment:
 
    ```bash
    python -m venv venv
    source venv/bin/activate
    ```
 
-3. Install dependencies:
+2. Install dependencies:
 
    ```bash
    pip install -r requirements.txt
    ```
 
-4. Run the backend:
+3. Run the main file:
 
    ```bash
    python app.py
